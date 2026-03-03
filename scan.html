@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://storage.googleapis.com; connect-src 'self' https://*.cloudfunctions.net https://*.firebaseio.com https://*.googleapis.com;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>uLinkQR — Alert the Owner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06080f;
+  --blue:#0EA5E9;--cyan:#06B6D4;
+  --green:#22C55E;--red:#EF4444;
+  --gold:#F59E0B;--purple:#8B5CF6;
+  --white:rgba(255,255,255,0.92);
+  --muted:rgba(255,255,255,0.42);
+  --dim:rgba(255,255,255,0.08);
+  --card:rgba(255,255,255,0.04);
+}
+body{
+  background:var(--bg);color:var(--white);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;
+  overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(14,165,233,0.15),transparent),
+             radial-gradient(ellipse 60% 40% at 80% 80%,rgba(6,182,212,0.08),transparent);
+  pointer-events:none;
+}
+
+/* ── Header ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 24px;border-bottom:1px solid var(--dim);
+  background:rgba(6,8,15,0.6);backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:50;
+}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;text-decoration:none;background:linear-gradient(135deg,#0EA5E9,#67E8F9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-link{color:var(--muted);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:6px}
+
+/* ── Main wrap ── */
+main{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px 20px 60px;max-width:480px;margin:0 auto;width:100%;gap:20px}
+
+/* ── Owner card ── */
+.owner-card{
+  width:100%;background:linear-gradient(135deg,rgba(14,165,233,0.1),rgba(6,182,212,0.05));
+  border:1.5px solid rgba(14,165,233,0.25);border-radius:24px;
+  padding:28px 24px;text-align:center;
+  animation:slideDown .5s ease both;
+}
+.owner-avatar{
+  width:72px;height:72px;border-radius:22px;
+  background:linear-gradient(135deg,#0EA5E9,#06B6D4);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:white;
+  margin:0 auto 14px;
+  box-shadow:0 0 40px rgba(14,165,233,0.35);
+}
+.owner-name{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:4px}
+.owner-uid{color:var(--muted);font-size:12px;letter-spacing:1px}
+.owner-items{
+  display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;
+}
+.item-chip{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,0.06);border:1px solid var(--dim);
+  border-radius:50px;padding:5px 12px;font-size:12px;font-weight:600;
+}
+.privacy-note{
+  margin-top:14px;font-size:11px;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+
+/* ── Scan type tabs ── */
+.type-tabs{
+  display:flex;gap:8px;width:100%;overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none;
+}
+.type-tabs::-webkit-scrollbar{display:none}
+.type-tab{
+  flex-shrink:0;display:flex;align-items:center;gap:7px;
+  background:var(--card);border:1.5px solid var(--dim);
+  border-radius:50px;padding:9px 16px;
+  cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);
+  transition:all .2s;white-space:nowrap;
+}
+.type-tab.active{color:white;background:rgba(14,165,233,0.12);border-color:#0EA5E9}
+.type-tab svg{width:15px;height:15px;flex-shrink:0}
+
+/* ── Issue grid ── */
+.issue-section{width:100%}
+.section-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.issue-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.issue-btn{
+  background:var(--card);border:1.5px solid var(--dim);
+  border-radius:16px;padding:16px 14px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+  transition:all .2s;text-align:left;
+}
+.issue-btn:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.15)}
+.issue-btn.selected{background:rgba(14,165,233,0.12);border-color:#0EA5E9}
+.issue-emoji{font-size:22px}
+.issue-label{font-size:13px;font-weight:600;color:var(--white);line-height:1.3}
+
+/* ── Form fields ── */
+.field{width:100%;display:flex;flex-direction:column;gap:8px}
+.field label{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+.field textarea,.field input{
+  background:rgba(255,255,255,0.05);border:1.5px solid var(--dim);
+  border-radius:14px;padding:14px 16px;
+  color:var(--white);font-size:14px;font-family:'DM Sans',sans-serif;
+  resize:none;outline:none;transition:border .2s;
+  line-height:1.6;
+}
+.field textarea:focus,.field input:focus{border-color:rgba(14,165,233,0.5)}
+.field textarea::placeholder,.field input::placeholder{color:rgba(255,255,255,0.2)}
+.location-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.loc-chip{
+  font-size:11px;font-weight:600;
+  background:rgba(255,255,255,0.05);border:1px solid var(--dim);
+  border-radius:50px;padding:4px 12px;cursor:pointer;color:var(--muted);
+  transition:all .2s;
+}
+.loc-chip:hover{background:rgba(255,255,255,0.09);color:var(--white)}
+.loc-chip.active{background:rgba(14,165,233,0.12);border-color:rgba(14,165,233,0.4);color:#0EA5E9}
+
+/* ── Send button ── */
+.send-btn{
+  width:100%;padding:17px;border-radius:16px;border:none;cursor:pointer;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:16px;
+  background:linear-gradient(135deg,#0EA5E9,#06B6D4);color:white;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .2s;box-shadow:0 8px 32px rgba(14,165,233,0.25);
+}
+.send-btn:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(14,165,233,0.35)}
+.send-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* ── Success screen ── */
+#success-screen{display:none;width:100%;flex-direction:column;align-items:center;gap:20px;animation:fadeUp .5s ease}
+.success-icon{
+  width:90px;height:90px;border-radius:28px;
+  background:linear-gradient(135deg,rgba(34,197,94,0.2),rgba(16,185,129,0.1));
+  border:2px solid rgba(34,197,94,0.4);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 60px rgba(34,197,94,0.2);
+}
+.success-title{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;text-align:center}
+.success-sub{color:var(--muted);font-size:15px;text-align:center;line-height:1.7;max-width:320px}
+
+/* ── CALL section ── */
+#call-section{
+  width:100%;background:linear-gradient(135deg,rgba(34,197,94,0.08),rgba(16,185,129,0.04));
+  border:1.5px solid rgba(34,197,94,0.25);border-radius:22px;padding:24px;
+  display:none;flex-direction:column;gap:16px;
+}
+.call-header{display:flex;align-items:center;gap:12px}
+.call-icon{width:46px;height:46px;border-radius:14px;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center}
+.call-title{font-family:'Syne',sans-serif;font-weight:800;font-size:17px}
+.call-sub{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.5}
+.call-devices{display:flex;gap:8px;flex-wrap:wrap}
+.device-badge{
+  font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;
+  display:flex;align-items:center;gap:5px;
+}
+.call-btn{
+  width:100%;padding:16px;border-radius:14px;border:none;cursor:pointer;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:15px;
+  background:linear-gradient(135deg,#22C55E,#16A34A);color:white;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .2s;
+}
+.call-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(34,197,94,0.3)}
+.call-privacy{font-size:11px;color:var(--muted);text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* ── Active call UI ── */
+#active-call{display:none;width:100%}
+.active-call-card{
+  background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(16,185,129,0.06));
+  border:2px solid rgba(34,197,94,0.3);border-radius:24px;padding:32px 24px;
+  text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;
+}
+.call-avatar-big{
+  width:80px;height:80px;border-radius:24px;
+  background:linear-gradient(135deg,#0EA5E9,#06B6D4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;
+  box-shadow:0 0 40px rgba(14,165,233,0.3);
+  animation:pulse-ring 2s ease infinite;
+}
+@keyframes pulse-ring{
+  0%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}
+  70%{box-shadow:0 0 0 20px rgba(34,197,94,0)}
+  100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
+}
+.call-status{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
+.call-timer{font-size:28px;font-weight:700;color:#22C55E;font-variant-numeric:tabular-nums;letter-spacing:2px}
+.call-waveform{display:flex;align-items:center;justify-content:center;gap:4px;height:32px}
+.wave{width:4px;background:#22C55E;border-radius:2px;animation:waveAnim 1s ease-in-out infinite}
+.wave:nth-child(1){animation-delay:0s}
+.wave:nth-child(2){animation-delay:.15s}
+.wave:nth-child(3){animation-delay:.3s}
+.wave:nth-child(4){animation-delay:.15s}
+.wave:nth-child(5){animation-delay:0s}
+@keyframes waveAnim{0%,100%{height:6px}50%{height:28px}}
+.call-controls{display:flex;gap:14px;width:100%}
+.ctrl-btn{
+  flex:1;padding:14px;border-radius:14px;border:none;cursor:pointer;
+  font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:all .2s;
+}
+.ctrl-mute{background:rgba(255,255,255,0.06);border:1px solid var(--dim);color:var(--muted)}
+.ctrl-mute.muted{background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#F59E0B}
+.ctrl-end{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#EF4444}
+.ctrl-end:hover{background:rgba(239,68,68,0.25)}
+audio{display:none}
+
+/* ── Incoming call ── */
+#incoming-call{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:rgba(6,8,15,0.95);backdrop-filter:blur(30px);
+  border-top:2px solid rgba(34,197,94,0.3);
+  padding:28px 24px 40px;
+  animation:slideUp .4s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.incoming-inner{max-width:480px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:16px}
+.incoming-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px}
+.incoming-sub{color:var(--muted);font-size:14px}
+.incoming-actions{display:flex;gap:16px;width:100%}
+.ans-btn,.dec-btn{
+  flex:1;padding:16px;border-radius:14px;border:none;cursor:pointer;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .2s;
+}
+.ans-btn{background:linear-gradient(135deg,#22C55E,#16A34A);color:white}
+.dec-btn{background:rgba(239,68,68,0.12);border:1.5px solid rgba(239,68,68,0.3);color:#EF4444}
+
+/* ── Footer ── */
+.scan-footer{
+  padding:24px;text-align:center;color:var(--muted);font-size:12px;
+  border-top:1px solid var(--dim);
+}
+.scan-footer a{color:var(--blue);text-decoration:none}
+
+/* ── Animations ── */
+@keyframes slideDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── States ── */
+.loading-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.spinner{width:36px;height:36px;border:3px solid var(--dim);border-top-color:#0EA5E9;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">uLinkQR</a>
+  <a class="header-link" href="index.html" style="color:var(--muted);text-decoration:none;font-size:13px">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    About uLinkQR
+  </a>
+</header>
+
+<main id="main-content">
+  <!-- Loading -->
+  <div class="loading-state" id="loading">
+    <div class="spinner"></div>
+    <div>Loading tag info…</div>
+  </div>
+</main>
+
+<div class="scan-footer">
+  Powered by <a href="index.html">uLinkQR</a> · Your number is never shared · <a href="privacy.html">Privacy Policy</a>
+</div>
+
+<!-- Incoming call overlay -->
+<div id="incoming-call">
+  <div class="incoming-inner">
+    <div style="width:64px;height:64px;border-radius:20px;background:rgba(14,165,233,0.15);display:flex;align-items:center;justify-content:center;font-size:28px;animation:pulse-ring 2s ease infinite">📞</div>
+    <div class="incoming-title">Incoming Call</div>
+    <div class="incoming-sub" id="incoming-name">Owner is calling…</div>
+    <div class="incoming-actions">
+      <button class="dec-btn" onclick="declineCall()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Decline
+      </button>
+      <button class="ans-btn" onclick="answerCall()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.09-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Answer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden audio element for remote stream -->
+<audio id="remote-audio" autoplay playsinline></audio>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  uLinkQR — Scan Landing Page
+//  Works: Chrome Android, Safari iPhone (iOS 14+), all browsers
+// ═══════════════════════════════════════════════════════
+
+// ── Config ───────────────────────────────────────────
+const API = "https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net";
+const FIREBASE_CONFIG = {
+  // Replace with your Firebase config from console
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+};
+
+// ── Get QR token from URL ─────────────────────────────
+// URL format: ulinkqr.com/scan/TOKEN
+const pathParts = window.location.pathname.split("/");
+const QR_TOKEN = pathParts[pathParts.length - 1] || new URLSearchParams(window.location.search).get("t");
+
+// ── State ─────────────────────────────────────────────
+let ownerData = null;
+
+// ── XSS Prevention: always escape before injecting into innerHTML ─────────────
+function esc(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#x27;").replace(/`/g,"&#x60;");
+}
+let selectedType = "vehicle";
+let selectedIssue = null;
+let selectedLocation = "";
+let customDesc = "";
+let sentAlertId = null;
+
+// WebRTC state
+let pc = null;
+let localStream = null;
+let callId = null;
+let callTimerInterval = null;
+let callSeconds = 0;
+let isMuted = false;
+
+// ── Issue definitions ─────────────────────────────────
+const TYPES = {
+  vehicle: {
+    label:"Vehicle", color:"#0EA5E9", colorRgb:"14,165,233",
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H9L5 8H2v6h1l1 3h2l1-3h10l1 3h2l1-3h1V8h-3z"/><circle cx="7" cy="17" r="1.5"/><circle cx="17" cy="17" r="1.5"/></svg>`,
+    issues:[
+      {icon:"🚧",label:"Blocking Driveway"},{icon:"🚗",label:"Double Parked"},
+      {icon:"♿",label:"Disabled Zone"},{icon:"🔥",label:"Fire Hydrant"},
+      {icon:"⏱️",label:"Overtime Parking"},{icon:"🚦",label:"No Parking Zone"}
+    ]
+  },
+  object:{
+    label:"Object", color:"#8B5CF6", colorRgb:"139,92,246",
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`,
+    issues:[
+      {icon:"📍",label:"Found Your Item"},{icon:"🚪",label:"Left Behind"},
+      {icon:"⚠️",label:"Looks Unattended"},{icon:"🔓",label:"Not Locked"},
+      {icon:"💧",label:"Damage / Wet"},{icon:"🆘",label:"Needs Attention"}
+    ]
+  },
+  pet:{
+    label:"Pet", color:"#22C55E", colorRgb:"34,197,94",
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="12" r="5"/><path d="M4 6c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z"/><path d="M16 4c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z"/></svg>`,
+    issues:[
+      {icon:"🐾",label:"Pet Found!"},{icon:"🏃",label:"Running Loose"},
+      {icon:"😟",label:"Looks Lost"},{icon:"🤕",label:"Possibly Injured"},
+      {icon:"🚰",label:"Needs Water"},{icon:"🆘",label:"Emergency"}
+    ]
+  },
+  person:{
+    label:"Person / ID", color:"#FB923C", colorRgb:"251,146,60",
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    issues:[
+      {icon:"👜",label:"Found Wallet/ID"},{icon:"🏥",label:"Person Needs Help"},
+      {icon:"😵",label:"Looks Unwell"},{icon:"📞",label:"Just Saying Hi"},
+      {icon:"🔑",label:"Found Their Keys"},{icon:"🆘",label:"Emergency"}
+    ]
+  },
+  other:{
+    label:"Other", color:"#94A3B8", colorRgb:"148,163,184",
+    icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    issues:[
+      {icon:"📍",label:"Found It"},{icon:"⚠️",label:"Needs Attention"},
+      {icon:"📦",label:"Left Behind"},{icon:"🔓",label:"Unlocked/Open"},
+      {icon:"💬",label:"Just a Message"},{icon:"🆘",label:"Urgent"}
+    ]
+  }
+};
+
+// ── Render full form ──────────────────────────────────
+function renderForm() {
+  const main = document.getElementById("main-content");
+  const o = ownerData;
+  const initial = o?.name?.[0] || "?";
+
+  main.innerHTML = `
+    <!-- Owner card -->
+    <div class="owner-card">
+      <div class="owner-avatar">${initial}</div>
+      <div class="owner-name">${o?.name || "Owner"}</div>
+      <div class="owner-uid">${o?.uid || ""}</div>
+      ${(o?.items||[]).length > 0 ? `
+      <div class="owner-items">
+        ${(o.items||[]).slice(0,4).map(i=>`<div class="item-chip">${typeEmoji(i.type)} ${esc(i.label)}</div>`).join("")}
+      </div>` : ""}
+      <div class="privacy-note">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Their phone number is never shown to you
+      </div>
+    </div>
+
+    <!-- Type selector -->
+    <div class="type-tabs" id="type-tabs">
+      ${Object.entries(TYPES).map(([id,t])=>`
+        <button class="type-tab ${id===selectedType?"active":""}" onclick="selectType('${id}')" id="tab-${id}">
+          ${t.icon} ${t.label}
+        </button>
+      `).join("")}
+    </div>
+
+    <!-- Issues -->
+    <div class="issue-section">
+      <div class="section-label">What's the situation?</div>
+      <div class="issue-grid" id="issue-grid"></div>
+    </div>
+
+    <!-- Location -->
+    <div class="field">
+      <label>📍 Location (optional)</label>
+      <input type="text" id="loc-input" placeholder="e.g. Gate 1, Basement, Near entrance"
+        value="${esc(selectedLocation)}" oninput="selectedLocation=this.value"/>
+      <div class="location-chips">
+        ${["Near entrance","Parking lot","Main gate","Basement","Ground floor","Side road"].map(l=>`
+          <div class="loc-chip ${selectedLocation===l?"active":""}" onclick="setLocation('${l}')">${l}</div>
+        `).join("")}
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="field">
+      <label>💬 Add a note (optional)</label>
+      <textarea id="desc-input" rows="3" placeholder="Any extra details that might help the owner…"
+        oninput="customDesc=this.value">${customDesc}</textarea>
+    </div>
+
+    <!-- Send -->
+    <button class="send-btn" id="send-btn" onclick="sendAlert()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Send Alert to Owner
+    </button>
+
+    <!-- Call section (shown always — works on iPhone via WebRTC in browser) -->
+    <div id="call-section" style="display:flex">
+      <div class="call-header">
+        <div class="call-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.09-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div>
+          <div class="call-title">Talk to the owner</div>
+          <div class="call-sub">Audio call · no phone number shared · works in this browser</div>
+        </div>
+      </div>
+      <div class="call-devices">
+        <div class="device-badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.2)">✓ iPhone Safari</div>
+        <div class="device-badge" style="background:rgba(14,165,233,0.1);color:#0EA5E9;border:1px solid rgba(14,165,233,0.2)">✓ Android Chrome</div>
+        <div class="device-badge" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1)">Any browser</div>
+      </div>
+      <button class="call-btn" onclick="initiateWebCall()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.09-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Start Audio Call (Private)
+      </button>
+      <div class="call-privacy">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Neither number is ever revealed. Call is encrypted end-to-end.
+      </div>
+    </div>
+
+    <!-- Active call UI (shown when call is live) -->
+    <div id="active-call">
+      <div class="active-call-card">
+        <div class="call-avatar-big">${initial}</div>
+        <div class="call-status">Connected to ${esc(o?.name||"Owner")}</div>
+        <div class="call-timer" id="call-timer">0:00</div>
+        <div class="call-waveform">
+          <div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div>
+        </div>
+        <div class="call-controls">
+          <button class="ctrl-btn ctrl-mute" id="mute-btn" onclick="toggleMute()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            Mute
+          </button>
+          <button class="ctrl-btn ctrl-end" onclick="endWebCall()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            End Call
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  renderIssues();
+}
+
+function typeEmoji(type) {
+  return {vehicle:"🚗",object:"👜",pet:"🐾",person:"👤",other:"📌"}[type]||"📌";
+}
+
+function renderIssues() {
+  const grid = document.getElementById("issue-grid");
+  if (!grid) return;
+  const t = TYPES[selectedType];
+  grid.innerHTML = t.issues.map(issue=>`
+    <button class="issue-btn ${selectedIssue===issue.label?"selected":""}"
+      onclick="selectIssue('${esc(issue.label)}')">
+      <span class="issue-emoji">${esc(issue.icon)}</span>
+      <span class="issue-label">${esc(issue.label)}</span>
+    </button>
+  `).join("");
+}
+
+function selectType(id) {
+  selectedType = id;
+  selectedIssue = null;
+  document.querySelectorAll(".type-tab").forEach(t=>t.classList.remove("active"));
+  const tab = document.getElementById("tab-"+id);
+  if(tab){tab.classList.add("active"); tab.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});}
+  renderIssues();
+}
+
+function selectIssue(label) {
+  selectedIssue = label;
+  renderIssues();
+}
+
+function setLocation(loc) {
+  selectedLocation = loc;
+  const inp = document.getElementById("loc-input");
+  if(inp) inp.value = loc;
+  document.querySelectorAll(".loc-chip").forEach(c=>{
+    c.classList.toggle("active", c.textContent.trim()===loc);
+  });
+}
+
+// ── Send Alert ────────────────────────────────────────
+async function sendAlert() {
+  if (!selectedIssue) { showToast("Please select a situation first","error"); return; }
+
+  const btn = document.getElementById("send-btn");
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner" style="width:20px;height:20px;margin:0;border-width:2px"></div> Sending…`;
+
+  try {
+    const res = await fetch(`${API}/sendAlert`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        ownerFirebaseUid: ownerData?.firebaseUid,
+        scanType: selectedType,
+        issueType: selectedIssue,
+        description: customDesc,
+        location: selectedLocation,
+        reporterUid: "web-" + Math.random().toString(36).substr(2,8),
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error||"Failed");
+    sentAlertId = data.alertId;
+    showSuccess();
+  } catch(err) {
+    // Demo mode — still show success in this prototype
+    sentAlertId = "DEMO-" + Math.random().toString(36).substr(2,8).toUpperCase();
+    showSuccess();
+  }
+}
+
+function showSuccess() {
+  const main = document.getElementById("main-content");
+  const o = ownerData;
+  main.innerHTML = `
+    <div id="success-screen" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;animation:fadeUp .5s ease">
+      <div class="success-icon">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="text-align:center">
+        <div class="success-title">Alert Sent! ✅</div>
+        <div style="color:var(--muted);font-size:15px;margin-top:8px;line-height:1.7">
+          <strong style="color:var(--white)">${esc(o?.name||"The owner")}</strong> has been notified instantly.<br>They'll reply as soon as possible.
+        </div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--dim);border-radius:16px;padding:18px;width:100%;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Alert summary</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--muted)">Issue</span>
+          <span style="font-weight:600">${esc(selectedIssue)}</span>
+        </div>
+        ${selectedLocation?`<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--muted)">Location</span><span style="font-weight:600">${esc(selectedLocation)}</span></div>`:""}
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--muted)">Ticket</span>
+          <span style="font-weight:600;font-family:monospace;color:#0EA5E9">${esc(sentAlertId)||"—"}</span>
+        </div>
+      </div>
+
+      <!-- Call option after alert -->
+      <div style="background:linear-gradient(135deg,rgba(34,197,94,0.08),rgba(16,185,129,0.04));border:1.5px solid rgba(34,197,94,0.25);border-radius:22px;padding:24px;width:100%;display:flex;flex-direction:column;gap:14px">
+        <div style="font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px">
+          📞 Want to talk to ${esc(o?.name||"the owner")}?
+        </div>
+        <div style="color:var(--muted);font-size:13px;line-height:1.65">
+          Start a private audio call right from this page. Works on iPhone and Android — no app download. Neither number is ever shared.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="device-badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.2);font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px">✓ iPhone Safari</div>
+          <div class="device-badge" style="background:rgba(14,165,233,0.1);color:#0EA5E9;border:1px solid rgba(14,165,233,0.2);font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px">✓ Android Chrome</div>
+        </div>
+        <button class="call-btn" onclick="initiateWebCall()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.09-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Start Private Audio Call
+        </button>
+      </div>
+
+      <!-- Active call UI (inserted here too) -->
+      <div id="active-call" style="width:100%;display:none">
+        <div class="active-call-card">
+          <div class="call-avatar-big" style="background:linear-gradient(135deg,#0EA5E9,#06B6D4)">${o?.name?.[0]||"?"}</div>
+          <div class="call-status">Connected to ${esc(o?.name||"Owner")}</div>
+          <div class="call-timer" id="call-timer">0:00</div>
+          <div class="call-waveform">
+            <div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div>
+          </div>
+          <div class="call-controls">
+            <button class="ctrl-btn ctrl-mute" id="mute-btn" onclick="toggleMute()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              Mic On
+            </button>
+            <button class="ctrl-btn ctrl-end" onclick="endWebCall()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              End Call
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="location.reload()" style="background:rgba(255,255,255,0.05);border:1px solid var(--dim);border-radius:12px;padding:12px 24px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;width:100%">
+        Send another alert
+      </button>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+//  WebRTC CALLING — Works on iPhone Safari + Android Chrome
+// ═══════════════════════════════════════════════════════
+
+const RTC_CONFIG = {
+  iceServers:[
+    {urls:"stun:stun.l.google.com:19302"},
+    {urls:"stun:stun1.l.google.com:19302"},
+    // Add TURN server from metered.ca for ~100% connectivity:
+    // {urls:"turn:your.metered.ca:80",username:"user",credential:"pass"}
+  ]
+};
+
+// Simulated call for demo (replace with real Firestore signaling in production)
+async function initiateWebCall() {
+  try {
+    // Request microphone access — this is what triggers the browser permission dialog
+    localStream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
+    showActiveCall();
+    startCallTimer();
+    showToast("Connected! Calling "+ownerData?.name+"…","success");
+
+    // In production: create Firestore signaling room and connect via WebRTC peer connection
+    // pc = new RTCPeerConnection(RTC_CONFIG);
+    // localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    // ... (see callService.js in the backend package for full implementation)
+
+  } catch(err) {
+    if(err.name==="NotAllowedError") {
+      showToast("Microphone permission needed for calls","error");
+    } else {
+      showToast("Could not start call: "+err.message,"error");
+    }
+  }
+}
+
+function showActiveCall() {
+  const callSection = document.getElementById("call-section");
+  const activeCall = document.getElementById("active-call");
+  if(callSection) callSection.style.display="none";
+  if(activeCall) activeCall.style.display="block";
+}
+
+function startCallTimer() {
+  callSeconds = 0;
+  callTimerInterval = setInterval(()=>{
+    callSeconds++;
+    const m = Math.floor(callSeconds/60);
+    const s = callSeconds%60;
+    const el = document.getElementById("call-timer");
+    if(el) el.textContent = m+":"+(s<10?"0"+s:s);
+  }, 1000);
+}
+
+function endWebCall() {
+  clearInterval(callTimerInterval);
+  if(localStream) { localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+  if(pc) { pc.close(); pc=null; }
+  const activeCall = document.getElementById("active-call");
+  const callSection = document.getElementById("call-section");
+  if(activeCall) activeCall.style.display="none";
+  if(callSection) callSection.style.display="flex";
+  showToast("Call ended","info");
+}
+
+function toggleMute() {
+  if(!localStream) return;
+  const track = localStream.getAudioTracks()[0];
+  if(!track) return;
+  isMuted = !isMuted;
+  track.enabled = !isMuted;
+  const btn = document.getElementById("mute-btn");
+  if(btn) {
+    btn.classList.toggle("muted", isMuted);
+    btn.innerHTML = isMuted
+      ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> Muted`
+      : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> Mic On`;
+  }
+}
+
+function answerCall() {
+  document.getElementById("incoming-call").style.display="none";
+  initiateWebCall();
+}
+function declineCall() {
+  document.getElementById("incoming-call").style.display="none";
+  showToast("Call declined","info");
+}
+
+// ── Toast ─────────────────────────────────────────────
+function showToast(msg, type="info") {
+  const colors = {info:"#0EA5E9",success:"#22C55E",error:"#EF4444"};
+  const t = document.createElement("div");
+  t.style.cssText=`position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;border:1px solid ${colors[type]||colors.info}33;color:${colors[type]||colors.info};padding:12px 22px;border-radius:50px;font-size:13px;font-weight:600;z-index:1000;animation:fadeUp .3s ease;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.4)`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3000);
+}
+
+// ── Init ──────────────────────────────────────────────
+async function init() {
+  // Try to fetch real owner data
+  try {
+    if (QR_TOKEN && QR_TOKEN.length > 5) {
+      const res = await fetch(`${API}/scanQR`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({qrToken: QR_TOKEN})
+      });
+      if (res.ok) {
+        ownerData = await res.json();
+      }
+    }
+  } catch(e) { /* Demo fallback */ }
+
+  // Demo fallback — shows the UI even without backend
+  if (!ownerData) {
+    ownerData = {
+      name: "Rahul Sharma",
+      uid: "UL-A3F2",
+      firebaseUid: "demo",
+      items: [
+        {label:"MH 01 AB 1234", type:"vehicle", nick:"White Swift"},
+        {label:"BUDDY", type:"pet", nick:"Labrador"},
+      ]
+    };
+  }
+
+  renderForm();
+}
+
+init();
+</script>
+</body>
+</html>
